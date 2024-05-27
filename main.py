@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 # Password Generator Project
@@ -90,6 +91,7 @@ def add_record():
     website = website_input.get()
     username = username_input.get()
     password = password_input.get()
+    new_data = {website: {"email": username, "password": password}}
 
     if len(website) == 0 or len(username) == 0 or len(password) == 0:
         messagebox.showinfo(
@@ -97,18 +99,49 @@ def add_record():
         )
 
     else:
+        try:
+            with open("data.json", "r") as file:
+                # Loading the old Data from JSON
+                data = json.load(file)
 
-        is_ok = messagebox.askokcancel(
-            title=website,
-            message=f"These are the details entered\n Username/Email: {username}\n Password: {password}\n Is is okay to save?",
+        except FileNotFoundError:
+            with open("data.json", "w") as file:
+                json.dump(new_data, file, indent=4)
+        else:
+            # Updating the Data in JSON
+            data.update(new_data)
+
+            with open("data.json", "w") as file:
+                # Saving the updated data
+                json.dump(data, file, indent=4)
+
+        website_input.delete(0, END)
+        username_input.delete(0, END)
+        password_input.delete(0, END)
+
+
+# ---------------------------- SEARCH ------------------------------- #
+
+
+def search():
+    website = website_input.get()
+    try:
+        with open("data.json", "r") as file:
+            # Loading the old Data from JSON
+            data = json.load(file)
+            search_data = data[website]
+    except KeyError:
+        messagebox.showinfo(
+            title="Site Details not Found", message="There is no data available for this site"
         )
-
-        if is_ok:
-            with open("passowrd.txt", "a") as file:
-                file.write(f"{website} | {username} | {password}\n")
-                website_input.delete(0, END)
-                username_input.delete(0, END)
-                password_input.delete(0, END)
+    except FileNotFoundError:
+        messagebox.showinfo(
+            title="File not Found", message="No data file is available"
+        )
+    else:
+        messagebox.showinfo(
+            title={website}, message=f"Email: {search_data["email"]}\nPassword: {search_data["password"]}"
+        )
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -134,8 +167,8 @@ password_label = Label(text="Password:", bg="white")
 password_label.grid(column=0, row=3)
 
 # Inputs
-website_input = Entry(width=35)
-website_input.grid(row=1, column=1, columnspan=2)
+website_input = Entry(width=25)
+website_input.grid(row=1, column=1, sticky=E)
 website_input.focus()
 
 username_input = Entry(width=35)
@@ -150,5 +183,8 @@ generate_button.grid(row=3, column=2, sticky=W + E)
 
 add_button = Button(text="Add", width=36, command=add_record)
 add_button.grid(row=4, column=1, columnspan=2)
+
+search_button = Button(text="Search", command=search)
+search_button.grid(row=1, column=2, sticky=W + E)
 
 window.mainloop()
